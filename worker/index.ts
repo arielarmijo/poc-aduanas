@@ -1,5 +1,21 @@
 import { openDB } from 'idb';
 
+import {registerRoute} from 'workbox-routing';
+
+async function handlerCb({url}: any) {
+  const id = url.pathname.split('/').filter(Boolean)[1];
+  console.log({url, id})
+  const user = await (await db).get('users', Number(id));
+  console.log({user})
+  return new Response(JSON.stringify({...user, msg: 'FROM SW!!!'}), {
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  });
+}
+
+registerRoute(new RegExp('https://jsonplaceholder.typicode.com/users/'), handlerCb);
+
 const db = openDB('test-DB', 1, {
   upgrade: (db) => {
     if (!db.objectStoreNames.contains('users')) {
@@ -24,15 +40,15 @@ self.addEventListener('activate', (event: any) => {
   console.log({event})
 })
 
-self.addEventListener('fetch', async (event: any) => {
-  console.log(`Event ${event.type} is triggered.`)
-  console.log({event})
+// self.addEventListener('fetch', async (event: any) => {
+//   console.log(`Event ${event.type} is triggered.`)
+//   console.log({event})
 
-  if (event.request.url.includes('https://jsonplaceholder.typicode.com/users/')) {
-    const id = event.request.url.split('/').filter(Boolean)[3];
-    const user = await (await db).get('users', (Number(id)));
-    console.log({id, user}, event.request.url);
-    event.respondWith(new Response(JSON.stringify(user)));
-  }
+//   if (event.request.url.includes('https://jsonplaceholder.typicode.com/users/')) {
+//     const id = event.request.url.split('/').filter(Boolean)[3];
+//     const user = await (await db).get('users', (Number(id)));
+//     console.log({id, user}, event.request.url);
+//     event.respondWith(new Response(JSON.stringify({...user, msg: 'From SW'})));
+//   }
 
-})
+// })
