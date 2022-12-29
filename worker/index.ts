@@ -30,9 +30,9 @@ self.addEventListener('fetch', async (event: any) => {
 
   if (event.request.url.includes('https://jsonplaceholder.typicode.com/users/')) {
     const id = event.request.url.split('/').filter(Boolean)[3];
-    const user = await (await db).get('users', id);
+    const user = await (await db).get('users', (Number(id)));
     console.log({id, user}, event.request.url);
-    event.respondWith(new Response(user));
+    event.respondWith(new Response(JSON.stringify(user)));
   }
 
 })
