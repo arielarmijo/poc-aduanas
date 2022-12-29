@@ -5,12 +5,11 @@ export default function Document() {
     <Html lang="es">
       <Head>
         <meta charSet="UTF-8"/>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0, height=device-height, viewport-fit=cover"/>
         <link rel="manifest" href="manifest.json" />
         <meta name="theme-color" content="#2196f3" />
-
         {/* iOS meta tags generated with pwa-assest-generator*/}
         <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
         <link rel="apple-touch-icon" href="icons/apple-icon-180.png" />
         <link
           rel="apple-touch-startup-image"
