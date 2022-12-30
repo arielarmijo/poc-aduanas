@@ -1,22 +1,10 @@
 import { openDB } from 'idb';
+import { RouteHandlerCallbackOptions } from 'workbox-core';
+import { registerRoute, Route, } from 'workbox-routing';
+import {NetworkOnly} from 'workbox-strategies';
+import {BackgroundSyncPlugin} from 'workbox-background-sync';
 
-import {registerRoute} from 'workbox-routing';
-
-async function handlerCb({url}: any) {
-  const id = url.pathname.split('/').filter(Boolean)[1];
-  console.log({url, id})
-  const user = await (await db).get('users', Number(id));
-  console.log({user})
-  return new Response(JSON.stringify({...user, msg: 'FROM SW!!!'}), {
-    headers: {
-      'Content-Type': 'application/json'
-    }
-  });
-}
-
-registerRoute(new RegExp('https://jsonplaceholder.typicode.com/users/'), handlerCb);
-
-const db = openDB('test-DB', 1, {
+const testDB = openDB('test-DB', 1, {
   upgrade: (db) => {
     if (!db.objectStoreNames.contains('users')) {
       db.createObjectStore('users', { keyPath: 'id' });
@@ -24,31 +12,57 @@ const db = openDB('test-DB', 1, {
   },
 });
 
+const jsonPlaceholderUrl = /https:\/\/jsonplaceholder\.typicode\.com/;
+
+registerRoute(jsonPlaceholderUrl, async ({ url, request }: RouteHandlerCallbackOptions) => {
+
+  if (/^\/users\/\d+$/.test(url.pathname)) {
+    const id = Number(url.pathname.replace(/\/users\//, ''));
+    console.log('Buscando usuario id: ', id);
+    const user = await (await testDB).get('users', id);
+    if (user) {
+      console.log('Retornando desde DB: ', {user});
+      return new Response(JSON.stringify({...user, msg: 'From SW!!'}), { headers: { 'Content-Type': 'application/json' } });
+    }
+    
+  }
+
+  console.log('Buscando usuario en internet...');
+  return fetch(request);
+
+});
+
+
+const bgSync= new BackgroundSyncPlugin('posts', {
+  maxRetentionTime: 24 * 60 // Retry for max of 24 Hours (specified in minutes)
+});
+
+registerRoute(
+  new RegExp('https://jsonplaceholder.typicode.com/posts'),
+  new NetworkOnly({
+    networkTimeoutSeconds: 3,
+    plugins: [bgSync]
+  }),
+  'POST'
+);
+
+
 self.addEventListener('install', (event: any) => {
   console.log(`Event ${event.type} is triggered.`);
-  console.log({event});
-  db.then(async (db) => {
+  console.log('Inicializando la base de datos de usuarios...');
+  testDB.then(async (db) => {
     const users = await fetch('https://jsonplaceholder.typicode.com/users').then(resp => resp.json());
     users.forEach((user: any) => {
-      db.add('users', user);
+      db.put('users', user);
     })
-  })
+  });
 })
 
 self.addEventListener('activate', (event: any) => {
-  console.log(`Event ${event.type} is triggered.`)
-  console.log({event})
+  console.log(`Event ${event.type} is triggered.`);
 })
 
-// self.addEventListener('fetch', async (event: any) => {
-//   console.log(`Event ${event.type} is triggered.`)
-//   console.log({event})
+self.addEventListener('sync', (event: any) => {
+  console.log(`Event ${event.type} is triggered.`, {event});
+})
 
-//   if (event.request.url.includes('https://jsonplaceholder.typicode.com/users/')) {
-//     const id = event.request.url.split('/').filter(Boolean)[3];
-//     const user = await (await db).get('users', (Number(id)));
-//     console.log({id, user}, event.request.url);
-//     event.respondWith(new Response(JSON.stringify({...user, msg: 'From SW'})));
-//   }
-
-// })

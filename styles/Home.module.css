@@ -3,17 +3,47 @@
   flex-direction: column;
   justify-content: space-between;
   align-items: center;
-  padding: 6rem;
+  padding: 2rem 1rem;
+  gap: 1.5em;
 }
 
-.main form {
-  margin-bottom: 1em;
+.main label {
+  display: block;
+  margin-bottom: 0.5em;
 }
 
-.main form button {
-  margin-left: 0.5em;
+.userId {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5em;
 }
 
-.main pre {
+.userId label {
+  margin: 0;
+  height: min-content;
+}
+
+.userId input {
+  padding: 0.25em 0.5em;
+  text-align: center;
+  font-size: large;
+  width: 8ch;
+}
+
+.makePostForm {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 1em;
+}
+
+.makePostForm input {
   width: 100%;
 }
+
+.makePostForm button {
+  padding: 0.5em 0;
+}
+
