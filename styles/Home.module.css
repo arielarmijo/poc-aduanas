@@ -102,9 +102,9 @@
   text-align: center;
 }
 
-.checkpoints li span:nth-child(3){
+/* .checkpoints li span:nth-child(3){
   width:  4ch;
-}
+} */
 
 .checkpoints li span:last-child {
   flex-grow: 1;
