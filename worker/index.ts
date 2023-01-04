@@ -1,7 +1,11 @@
+// @ts-nocheck
+
 import { openDB } from 'idb';
 import { registerRoute } from 'workbox-routing';
 import { NetworkOnly } from 'workbox-strategies';
 import { BackgroundSyncPlugin } from 'workbox-background-sync';
+
+declare let self: ServiceWorkerGlobalScope
 
 export const customsDB = openDB('customsDB', 1, {
   upgrade: (db) => {
@@ -26,8 +30,33 @@ registerRoute(
   'GET'
 );
 
+
+async function postSuccessMessage(response: any) {
+  const clients = await self.clients.matchAll();
+  for (const client of clients) {
+    client.postMessage({
+      type: 'REPLAY_SUCCESS',
+      code: (await response.json()).code,
+    });
+  }
+}
+
+async function customReplay() {
+  let entry;
+  while ((entry = await this.shiftRequest())) {
+    try {
+      const response = await fetch(entry.request.clone());
+      postSuccessMessage(response);
+    } catch (error) {
+      await this.unshiftRequest(entry);
+      throw new Error('Replaying failed.');
+    }
+  }
+}
+
 const bgSync= new BackgroundSyncPlugin('tracking', {
-  maxRetentionTime: 24 * 60
+  maxRetentionTime: 24 * 60,
+  onSync: customReplay
 });
 
 registerRoute(

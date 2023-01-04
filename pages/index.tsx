@@ -1,6 +1,7 @@
 import { ChangeEvent, FormEvent, useCallback, useEffect, useState } from 'react';
 import Head from 'next/head';
 import { openDB } from 'idb';
+import { Workbox } from 'workbox-window';
 import styles from '../styles/Home.module.css';
 
 type ServiceOrder = any;
@@ -30,6 +31,23 @@ export default function Home() {
     setIsOffline(!window.navigator.onLine);
   }, []);
 
+  const handleBackSync = useCallback((event: MessageEvent) => {
+    console.log({data: event.data});
+    const { code } = event.data;
+    const index = appliedCheckpoints.findIndex(ckp => ckp.code === code);
+    if (index === -1) return;
+    const checkpoint = appliedCheckpoints[index];
+    checkpoint.status = 'SUCCESS';
+    setAppliedCheckpoints([...appliedCheckpoints]);
+  }, [appliedCheckpoints]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'serviceWorker' in navigator && window.workbox !== undefined) {
+      navigator.serviceWorker.addEventListener('message', handleBackSync);
+      return () => navigator.serviceWorker.removeEventListener('message', handleBackSync);
+    }
+  }, [handleBackSync]);
+
   useEffect(() => {
     if (typeof window !== 'undefined') {
       setIsOffline(!window.navigator.onLine);
@@ -42,13 +60,13 @@ export default function Home() {
     }
   }, [handleNetworkStatus, isOffline]);
 
-  useEffect(() => {
-    openDB('workbox-background-sync').then(db => {
-      const tx = db.transaction('requests', 'readonly');
-      const store = tx.objectStore('requests');
-      return store.getAll();
-    }).then(console.log);
-  }, [isOffline]);
+  // useEffect(() => {
+  //   openDB('workbox-background-sync').then(db => {
+  //     const tx = db.transaction('requests', 'readonly');
+  //     const store = tx.objectStore('requests');
+  //     return store.getAll();
+  //   }).then(console.log);
+  // }, [isOffline]);
 
   const handleServiceOrderCodeChange = async ({target: {value}}: ChangeEvent<HTMLInputElement>): Promise<void> => {
     setServiceOrderCode(value);
@@ -109,11 +127,11 @@ export default function Home() {
           ]))
       });
 
-      openDB('workbox-background-sync', 3).then(db => {
-        const tx = db.transaction('requests', 'readonly');
-        const store = tx.objectStore('requests');
-        return store.getAll();
-      }).then(console.log);
+      // openDB('workbox-background-sync', 3).then(db => {
+      //   const tx = db.transaction('requests', 'readonly');
+      //   const store = tx.objectStore('requests');
+      //   return store.getAll();
+      // }).then(console.log);
 
     }
   }
