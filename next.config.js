@@ -2,8 +2,8 @@
 
 const withPWA = require('next-pwa')({
   dest: 'public',
-  skipWaiting: false,
-  reloadOnOnline: false
+  skipWaiting: true,
+  reloadOnOnline: true
 })
 
 const webpack = require('webpack')

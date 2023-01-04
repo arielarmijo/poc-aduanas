@@ -1,16 +1,18 @@
 // @ts-nocheck
-
-import { openDB } from 'idb';
+import { openDB, deleteDB } from 'idb';
 import { registerRoute } from 'workbox-routing';
 import { NetworkOnly } from 'workbox-strategies';
 import { BackgroundSyncPlugin } from 'workbox-background-sync';
 
 declare let self: ServiceWorkerGlobalScope
 
-export const customsDB = openDB('customsDB', 1, {
+const CUSTOMS_DB_NAME = 'customsDB';
+const CUSTOMS_OS_NAME = 'serviceOrders';
+
+export const customsDB = openDB(CUSTOMS_DB_NAME, 1, {
   upgrade: (db) => {
-    if (!db.objectStoreNames.contains('serviceOrders')) {
-      db.createObjectStore('serviceOrders', { keyPath: 'code' });
+    if (!db.objectStoreNames.contains(CUSTOMS_OS_NAME)) {
+      db.createObjectStore(CUSTOMS_OS_NAME, { keyPath: 'code' });
     }
   },
 });
@@ -19,7 +21,7 @@ registerRoute(
   ({url}) => /\/service-orders\/\d+$/.test(url.pathname),
    async ({ url, request }) => {
     const code = url.pathname.match(/\d+$/)?.[0] as string;
-    const serviceOrder = await (await customsDB).get('serviceOrders', code);
+    const serviceOrder = await (await customsDB).get(CUSTOMS_OS_NAME, code);
     if (serviceOrder) {
       console.log(`Buscando orden de servicio ${code} en cache...`);
       return new Response(JSON.stringify(serviceOrder, ), { headers: { 'Content-Type': 'application/json' } });
@@ -70,19 +72,30 @@ registerRoute(
 
 self.addEventListener('install', async (event: any) => {
   console.log(`Event ${event.type} is triggered.`);
-  console.log('Inicializando object store órdenes de servicio en base de datos customsDB...');
-  const CUSTOMS_SRV_URL = process.env.CUSTOMS_SRV_URL;
-  const serviceOrders = await fetch(`${CUSTOMS_SRV_URL}/service-orders`).then(resp => resp.json());
+
+})
+
+self.addEventListener('activate', async (event: any) => {
+  console.log(`Event ${event.type} is triggered.`);
+
+  //const CUSTOMS_SRV_URL = process.env.CUSTOMS_SRV_URL;
+  // const serviceOrders = await fetch(`${CUSTOMS_SRV_URL}/service-orders`).then(resp => resp.json());
+  const serviceOrders = Array.from({length: 10000}, (item, index) => ({
+    code: String(index + 1),
+    cliente: `Test Client ${index + 1}`,
+    base: 'SCL',
+    description: 'Paquete genérico de prueba.'
+  }));
+  console.log('Borrando object store anterior...');
   const db = await customsDB;
-  const tx = db.transaction('serviceOrders', 'readwrite');
+  db.clear(CUSTOMS_OS_NAME);
+  console.log('Inicializando object store órdenes de servicio en base de datos customsDB...');
+  const tx = db.transaction(CUSTOMS_OS_NAME, 'readwrite');
   serviceOrders.forEach((serviceOrder: any) => {
     tx.store.put(serviceOrder).then(code => console.log(`agregando orden de servicio ${code} a la base de datos...`));
   })
   tx.done.then(() => console.log('Object store órdenes de servicio inicializada con éxito.')).catch(console.warn);
-})
 
-self.addEventListener('activate', (event: any) => {
-  console.log(`Event ${event.type} is triggered.`);
 })
 
 self.addEventListener('sync', (event: any) => {
