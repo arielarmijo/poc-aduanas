@@ -79,7 +79,6 @@
 .checkpoints {
   display: flex;
   flex-direction: column;
-  /* align-items: stretch; */
   gap: 1em;
   padding: 1em;
 }
@@ -102,18 +101,15 @@
   text-align: center;
 }
 
-/* .checkpoints li span:nth-child(3){
-  width:  4ch;
-} */
-
-.checkpoints li span:last-child {
+/* .checkpoints li span:last-child {
   flex-grow: 1;
-}
+} */
 
 @media (min-width: 380px) {
 
   .checkpoints li {
     flex-direction: row;
+    justify-content: center;;
     gap: 0.5em;
   }
   
@@ -125,8 +121,8 @@
     width:  4ch;
   }
   
-  .checkpoints li span:last-child {
+  /* .checkpoints li span:last-child {
     flex-grow: 1;
-  }
+  } */
 
 }
