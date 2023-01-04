@@ -79,15 +79,54 @@
 .checkpoints {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 0.5em;
+  /* align-items: stretch; */
+  gap: 1em;
   padding: 1em;
 }
 
 .checkpoints li {
-  width: 80%;
   list-style-type: none;
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.5em;
+  flex-direction: column ;
+  align-items: center;
+  gap: 0.25em;
+}
+
+.checkpoints li span:first-child {
+  white-space: nowrap;
+  width: fit-content;
+}
+
+.checkpoints li span:nth-child(2){
+  min-width:  10ch;
+  text-align: center;
+}
+
+.checkpoints li span:nth-child(3){
+  width:  4ch;
+}
+
+.checkpoints li span:last-child {
+  flex-grow: 1;
+}
+
+@media (min-width: 380px) {
+
+  .checkpoints li {
+    flex-direction: row;
+    gap: 0.5em;
+  }
+  
+  .checkpoints li span:nth-child(2){
+    text-align: end;
+  }
+  
+  .checkpoints li span:nth-child(3){
+    width:  4ch;
+  }
+  
+  .checkpoints li span:last-child {
+    flex-grow: 1;
+  }
+
 }

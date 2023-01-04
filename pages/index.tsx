@@ -60,14 +60,6 @@ export default function Home() {
     }
   }, [handleNetworkStatus, isOffline]);
 
-  // useEffect(() => {
-  //   openDB('workbox-background-sync').then(db => {
-  //     const tx = db.transaction('requests', 'readonly');
-  //     const store = tx.objectStore('requests');
-  //     return store.getAll();
-  //   }).then(console.log);
-  // }, [isOffline]);
-
   const handleServiceOrderCodeChange = async ({target: {value}}: ChangeEvent<HTMLInputElement>): Promise<void> => {
     setServiceOrderCode(value);
     setErrorMsg('');
@@ -126,12 +118,6 @@ export default function Home() {
               status: isOffline ? 'WAITING' : 'FAILED'}
           ]))
       });
-
-      // openDB('workbox-background-sync', 3).then(db => {
-      //   const tx = db.transaction('requests', 'readonly');
-      //   const store = tx.objectStore('requests');
-      //   return store.getAll();
-      // }).then(console.log);
 
     }
   }

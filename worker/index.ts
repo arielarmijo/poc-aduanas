@@ -78,14 +78,14 @@ self.addEventListener('install', async (event: any) => {
 self.addEventListener('activate', async (event: any) => {
   console.log(`Event ${event.type} is triggered.`);
 
-  //const CUSTOMS_SRV_URL = process.env.CUSTOMS_SRV_URL;
-  // const serviceOrders = await fetch(`${CUSTOMS_SRV_URL}/service-orders`).then(resp => resp.json());
-  const serviceOrders = Array.from({length: 10000}, (item, index) => ({
-    code: String(index + 1),
-    cliente: `Test Client ${index + 1}`,
-    base: 'SCL',
-    description: `Paquete genérico de prueba ${index + 1}.`
-  }));
+  // const serviceOrders = Array.from({length: 10000}, (item, index) => ({
+  //   code: String(index + 1),
+  //   cliente: `Test Client ${index + 1}`,
+  //   base: 'SCL',
+  //   description: `Paquete genérico de prueba ${index + 1}.`
+  // }));
+  const CUSTOMS_SRV_URL = process.env.CUSTOMS_SRV_URL;
+  const serviceOrders = await fetch(`${CUSTOMS_SRV_URL}/service-orders`).then(resp => resp.json());
   console.log('Borrando object store anterior...');
   const db = await customsDB;
   db.clear(CUSTOMS_OS_NAME);
