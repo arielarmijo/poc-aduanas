@@ -3,7 +3,7 @@
 const withPWA = require('next-pwa')({
   dest: 'public',
   skipWaiting: true,
-  reloadOnOnline: true
+  reloadOnOnline: false
 })
 
 const webpack = require('webpack')

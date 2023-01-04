@@ -89,12 +89,12 @@ self.addEventListener('activate', async (event: any) => {
   console.log('Borrando object store anterior...');
   const db = await customsDB;
   db.clear(CUSTOMS_OS_NAME);
-  console.log('Inicializando object store órdenes de servicio en base de datos customsDB...');
+  console.log('Inicializando object store...');
   const tx = db.transaction(CUSTOMS_OS_NAME, 'readwrite');
   serviceOrders.forEach((serviceOrder: any) => {
-    tx.store.put(serviceOrder).then(code => console.log(`agregando orden de servicio ${code} a la base de datos...`));
+    tx.store.put(serviceOrder).then(code => console.log(`agregando orden de servicio ${code}...`));
   })
-  tx.done.then(() => console.log('Object store órdenes de servicio inicializada con éxito.')).catch(console.warn);
+  tx.done.then(() => console.log('Object store inicializada con éxito.')).catch(console.warn);
 
 })
 
