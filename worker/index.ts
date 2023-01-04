@@ -84,7 +84,7 @@ self.addEventListener('activate', async (event: any) => {
     code: String(index + 1),
     cliente: `Test Client ${index + 1}`,
     base: 'SCL',
-    description: 'Paquete genérico de prueba.'
+    description: `Paquete genérico de prueba ${index + 1}.`
   }));
   console.log('Borrando object store anterior...');
   const db = await customsDB;
