@@ -1,49 +1,93 @@
 .main {
+  padding: 0.5em 1.5em;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  align-items: center;
-  padding: 2rem 1rem;
-  gap: 1.5em;
-}
-
-.main label {
-  display: block;
-  margin-bottom: 0.5em;
-}
-
-.userId {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  align-items: center;
-  gap: 0.5em;
-}
-
-.userId label {
-  margin: 0;
-  height: min-content;
-}
-
-.userId input {
-  padding: 0.25em 0.5em;
-  text-align: center;
-  font-size: large;
-  width: 8ch;
-}
-
-.makePostForm {
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
   gap: 1em;
 }
 
-.makePostForm input {
-  width: 100%;
+.main h1 {
+  text-align: center;
 }
 
-.makePostForm button {
-  padding: 0.5em 0;
+.networkStatus {
+  align-self: flex-end;
+  height: 1rem;
 }
 
+.serviceOrderForm {
+  width: 80%;
+  max-width: 250px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25em;
+}
+
+.serviceOrderForm .row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75em;
+}
+
+.serviceOrderForm input {
+  min-width: 50px;
+  flex: 1 0 60%;
+  padding: 0.25em 0.5em;
+}
+
+.serviceOrderForm button {
+  flex: 1 0 0%;
+  padding: 0.25em 0.75em;
+}
+
+.errorMessage {
+  font-size: 0.75rem;
+  padding: 0.5em;
+  min-height: 2.25em;
+}
+
+.serviceOrderInfo {
+  align-self: stretch;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 120px;
+}
+
+.serviceOrderInfo pre {
+  white-space: pre-wrap;
+  width: fit-content;
+  max-width:  350px;
+}
+
+.spacer {
+  height: 2.25em;
+}
+
+.buttonContainer {
+  display: flex;
+  justify-content: center;
+}
+
+.buttonContainer button {
+  font-size: 1rem;
+  padding: 0.75em 1em;
+  border-radius: var(--border-radius);
+}
+
+.checkpoints {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5em;
+  padding: 1em;
+}
+
+.checkpoints li {
+  width: 80%;
+  list-style-type: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5em;
+}

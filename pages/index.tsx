@@ -1,20 +1,32 @@
 import { ChangeEvent, FormEvent, useCallback, useEffect, useState } from 'react';
 import Head from 'next/head';
+import { openDB } from 'idb';
 import styles from '../styles/Home.module.css';
 
-type User = any;
+type ServiceOrder = any;
+type Checkpoint = any;
+
+const CUSTOMS_SRV_URL = process.env.NEXT_PUBLIC_CUSTOMS_SRV_URL;
+const TRACKING_SRV_URL = process.env.NEXT_PUBLIC_TRACKING_SRV_URL;
+
+const localDateOptions: Intl.DateTimeFormatOptions = {
+  year: "numeric",
+  month: "numeric",
+  day: "numeric",
+  hour: "numeric",
+  minute: "numeric",
+  second: "numeric"
+};
 
 export default function Home() {
 
   const [ isOffline, setIsOffline ] = useState(false);
   const [ errorMsg, setErrorMsg ] = useState('');
-  const [ userId, setUserId ] = useState('');
-  const [ user, setUser ] = useState<User>(null);
-  const [ title, setTitle ] = useState('');
-  const [ body, setBody ] = useState('');
+  const [ serviceOrderCode, setServiceOrderCode ] = useState('');
+  const [ serviceOrder, setServiceOrder ] = useState<ServiceOrder | null>(null);
+  const [ appliedCheckpoints, setAppliedCheckpoints ] = useState<Checkpoint[]>([]);
 
-  const handleNetworkStatus = useCallback((event: Event) => {
-    console.log({isOnline: window.navigator.onLine, event});
+  const handleNetworkStatus = useCallback((event: Event): void => {
     setIsOffline(!window.navigator.onLine);
   }, []);
 
@@ -28,50 +40,83 @@ export default function Home() {
         window.removeEventListener('online', handleNetworkStatus);
       };
     }
-  }, [handleNetworkStatus]);
+  }, [handleNetworkStatus, isOffline]);
 
-  const handleUserIdChange = async ({target: {value}}: ChangeEvent<HTMLInputElement>): Promise<void> => {
-    setUserId(value);
+  useEffect(() => {
+    openDB('workbox-background-sync').then(db => {
+      const tx = db.transaction('requests', 'readonly');
+      const store = tx.objectStore('requests');
+      return store.getAll();
+    }).then(console.log);
+  }, [isOffline]);
+
+  const handleServiceOrderCodeChange = async ({target: {value}}: ChangeEvent<HTMLInputElement>): Promise<void> => {
+    setServiceOrderCode(value);
     setErrorMsg('');
-    const user = await fetch(`https://jsonplaceholder.typicode.com/users/${value}`)
-                          .then(resp => {
-                            if (resp.ok) return resp.json();
-                            throw new Error(`User ID: ${value} not found!`)
-                          })
-                          .then(user => {
-                            console.log({user});
-                            return user;
-                          })
-                          .catch(error => {
-                            console.warn(error);
-                            setErrorMsg(error.message);
-                          });
-    setUser(user);
-    setTitle(user?.name ?? '');
-    setBody(user?.email ?? '');
-  }
-
-  const handlePostChange = (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>): void => {
-    const { name, value } = event.target;
-    // console.log({event, name, value});
-    if (name === 'title') setTitle(value);
-    if (name === 'body') setBody(value);
-
   };
 
-  const handleMakePost = async (event: FormEvent<HTMLFormElement>): Promise<void> => {
+  const handleGetServiceOrderInfo = async (event: FormEvent<HTMLFormElement>): Promise<void> => {
     event.preventDefault();
-    fetch('https://jsonplaceholder.typicode.com/posts', {
-      method: 'POST',
-      body: JSON.stringify({title, body, userId}),
-      headers: {'Content-type': 'application/json; charset=UTF-8'}
-    })
-      .then(resp => resp.json())
-      .then(data => {
-        console.log(data);
+    setServiceOrderCode('');
+    const code = (event.target as any).elements.serviceOrder.value;
+    const serviceOrder = await fetch(`${CUSTOMS_SRV_URL}/service-orders/${code}`)
+      .then(resp => {
+        if (resp.ok) return resp.json();
+        throw new Error(`Orden de servicio ${code} no existe.`)
       })
-      .catch(console.warn);
+      .catch(error => {
+        console.warn(error);
+        setErrorMsg(error.message);
+      });
+    setServiceOrder(serviceOrder);
   };
+
+  const handleApplyCheckpoint = (): void => {
+    if (serviceOrder?.code) {
+      const body = {
+        timestamp: String(Date.now()),
+        code: serviceOrder.code,
+        checkpoint: {
+          code: 'PU',
+          type: 'event',
+          description: 'Pinchazo de ejemplo'
+        },
+        status: 'SUCCESS'
+      };
+
+      fetch(`${TRACKING_SRV_URL}/tracking`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json'},
+        body: JSON.stringify(body)
+      })
+      .then(resp => {
+        if (resp.ok) return resp.json();
+        throw new Error('Error al guardar pinchazo.')
+      })
+      .then(data => {
+        setServiceOrder(null);
+        setAppliedCheckpoints(prev => ([...prev, data]))
+      })
+      .catch(error => {
+        console.warn(error);
+        setServiceOrder(null);
+        setAppliedCheckpoints(prev => (
+          [
+            ...prev,
+            {
+              ...body,
+              status: isOffline ? 'WAITING' : 'FAILED'}
+          ]))
+      });
+
+      openDB('workbox-background-sync', 3).then(db => {
+        const tx = db.transaction('requests', 'readonly');
+        const store = tx.objectStore('requests');
+        return store.getAll();
+      }).then(console.log);
+
+    }
+  }
 
   return (
     <>
@@ -83,44 +128,43 @@ export default function Home() {
       </Head>
       <main className={styles.main}>
 
-        { isOffline ? <p>Sin conexion</p> : null }
+        <p className={styles.networkStatus}>{ isOffline ? 'Sin conexión' : null }</p>
 
-        <div className={styles.userId}>
-          <label htmlFor="userName">ID usuario:</label>
-          <input
-            id="userName"
-            type="number"
-            name="userName"
-            value={userId}
-            onChange={handleUserIdChange}
-          />
+        <h1>POC Aduanas</h1>
+
+        <form className={styles.serviceOrderForm} onSubmit={handleGetServiceOrderInfo}>
+          <label htmlFor="serviceOrder">Orden de Servicio:</label>
+          <div className={styles.row}>
+            <input
+              id="serviceOrder"
+              type="text"
+              name="serviceOrder"
+              value={serviceOrderCode}
+              onChange={handleServiceOrderCodeChange}
+            />
+            <button type="submit">Buscar</button>
+          </div>
+          <p className={styles.errorMessage}>{errorMsg ?? null}</p>
+        </form>
+
+        <div className={styles.serviceOrderInfo}>
+          <pre>{serviceOrder ? JSON.stringify(serviceOrder, null, 2) : null}</pre>
         </div>
 
-        { errorMsg ? <p>{errorMsg}</p> : null }
+        <div className={styles.buttonContainer}>
+          <button type="button" onClick={handleApplyCheckpoint}>Aplicar Pinchazo</button>
+        </div>
 
-        <form className={styles.makePostForm} onSubmit={handleMakePost}>
-          <div>
-            <label htmlFor="title">Title</label>
-            <input
-              id="title"
-              type="text"
-              name="title"
-              value={title}
-              onChange={handlePostChange}
-            />
-          </div>
-          <div>
-            <label htmlFor="body">Body</label>
-            <textarea
-              id="body"
-              name="body"
-              value={body}
-              rows={5}
-              onChange={handlePostChange}
-            /> 
-          </div> 
-          <button type="submit">Make Post</button>
-        </form>
+        <ul className={styles.checkpoints}>
+          { appliedCheckpoints.map((ckp, i) => (
+            <li key={i}>
+              <span>{new Date(Number(ckp.timestamp)).toLocaleDateString('es-CL', localDateOptions)}</span>
+              <span>{ckp.code}</span>
+              <span>{ckp.checkpoint.code}</span>
+              <span>{ckp.status}</span>
+            </li>
+          )) }
+        </ul>
 
       </main>
     </>

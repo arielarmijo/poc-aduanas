@@ -1,44 +1,37 @@
 import { openDB } from 'idb';
-import { RouteHandlerCallbackOptions } from 'workbox-core';
-import { registerRoute, Route, } from 'workbox-routing';
-import {NetworkOnly} from 'workbox-strategies';
-import {BackgroundSyncPlugin} from 'workbox-background-sync';
+import { registerRoute } from 'workbox-routing';
+import { NetworkOnly } from 'workbox-strategies';
+import { BackgroundSyncPlugin } from 'workbox-background-sync';
 
-const testDB = openDB('test-DB', 1, {
+export const customsDB = openDB('customsDB', 1, {
   upgrade: (db) => {
-    if (!db.objectStoreNames.contains('users')) {
-      db.createObjectStore('users', { keyPath: 'id' });
+    if (!db.objectStoreNames.contains('serviceOrders')) {
+      db.createObjectStore('serviceOrders', { keyPath: 'code' });
     }
   },
 });
 
-const jsonPlaceholderUrl = /https:\/\/jsonplaceholder\.typicode\.com/;
-
-registerRoute(jsonPlaceholderUrl, async ({ url, request }: RouteHandlerCallbackOptions) => {
-
-  if (/^\/users\/\d+$/.test(url.pathname)) {
-    const id = Number(url.pathname.replace(/\/users\//, ''));
-    console.log('Buscando usuario id: ', id);
-    const user = await (await testDB).get('users', id);
-    if (user) {
-      console.log('Retornando desde DB: ', {user});
-      return new Response(JSON.stringify({...user, msg: 'From SW!!'}), { headers: { 'Content-Type': 'application/json' } });
+registerRoute(
+  ({url}) => /\/service-orders\/\d+$/.test(url.pathname),
+   async ({ url, request }) => {
+    const code = url.pathname.match(/\d+$/)?.[0] as string;
+    const serviceOrder = await (await customsDB).get('serviceOrders', code);
+    if (serviceOrder) {
+      console.log(`Buscando orden de servicio ${code} en cache...`);
+      return new Response(JSON.stringify(serviceOrder, ), { headers: { 'Content-Type': 'application/json' } });
     }
-    
-  }
+    console.log('Buscando orden de servicio en internet...');
+    return fetch(request);
+  },
+  'GET'
+);
 
-  console.log('Buscando usuario en internet...');
-  return fetch(request);
-
-});
-
-
-const bgSync= new BackgroundSyncPlugin('posts', {
-  maxRetentionTime: 24 * 60 // Retry for max of 24 Hours (specified in minutes)
+const bgSync= new BackgroundSyncPlugin('tracking', {
+  maxRetentionTime: 24 * 60
 });
 
 registerRoute(
-  new RegExp('https://jsonplaceholder.typicode.com/posts'),
+  ({ url }) => /tracking/.test(url.pathname),
   new NetworkOnly({
     networkTimeoutSeconds: 3,
     plugins: [bgSync]
@@ -46,16 +39,17 @@ registerRoute(
   'POST'
 );
 
-
-self.addEventListener('install', (event: any) => {
+self.addEventListener('install', async (event: any) => {
   console.log(`Event ${event.type} is triggered.`);
-  console.log('Inicializando la base de datos de usuarios...');
-  testDB.then(async (db) => {
-    const users = await fetch('https://jsonplaceholder.typicode.com/users').then(resp => resp.json());
-    users.forEach((user: any) => {
-      db.put('users', user);
-    })
-  });
+  console.log('Inicializando object store órdenes de servicio en base de datos customsDB...');
+  const CUSTOMS_SRV_URL = process.env.CUSTOMS_SRV_URL;
+  const serviceOrders = await fetch(`${CUSTOMS_SRV_URL}/service-orders`).then(resp => resp.json());
+  const db = await customsDB;
+  const tx = db.transaction('serviceOrders', 'readwrite');
+  serviceOrders.forEach((serviceOrder: any) => {
+    tx.store.put(serviceOrder).then(code => console.log(`agregando orden de servicio ${code} a la base de datos...`));
+  })
+  tx.done.then(() => console.log('Object store órdenes de servicio inicializada con éxito.')).catch(console.warn);
 })
 
 self.addEventListener('activate', (event: any) => {
